@@ -136,13 +136,19 @@ def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
     return enriched
 
 
+def observed_quantile(series: pd.Series, quantile: float) -> float:
+    return float(series.quantile(quantile, interpolation="nearest"))
+
+
 def compute_summary(series: pd.Series) -> pd.DataFrame:
     clean = series.dropna().astype(float)
     if clean.empty:
         return pd.DataFrame(columns=["Metric", "Value"])
 
-    q1 = clean.quantile(0.25)
-    q3 = clean.quantile(0.75)
+    q1 = observed_quantile(clean, 0.25)
+    q3 = observed_quantile(clean, 0.75)
+    median_value = observed_quantile(clean, 0.5)
+    percentile_95 = observed_quantile(clean, 0.95)
     mean_value = clean.mean()
     std_value = clean.std(ddof=1)
 
@@ -150,12 +156,12 @@ def compute_summary(series: pd.Series) -> pd.DataFrame:
         ("Attempts", len(clean)),
         ("Total Balls Potted", clean.sum()),
         ("Mean", mean_value),
-        ("Median", clean.median()),
+        ("Median", median_value),
         ("Standard Deviation", std_value if not np.isnan(std_value) else 0.0),
         ("Minimum", clean.min()),
         ("25th Percentile", q1),
         ("75th Percentile", q3),
-        ("95th Percentile", clean.quantile(0.95)),
+        ("95th Percentile", percentile_95),
         ("Maximum", clean.max()),
         ("Interquartile Range", q3 - q1),
         ("Range", clean.max() - clean.min()),
@@ -204,10 +210,11 @@ def build_rolling_windows(df: pd.DataFrame) -> list[TimeSlice]:
 
 def make_histogram(series: pd.Series, title: str):
     clean = series.dropna().astype(float)
+    median_value = observed_quantile(clean, 0.5)
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.hist(clean, bins="auto", edgecolor="black", alpha=0.85)
     ax.axvline(clean.mean(), color="#d62728", linestyle="--", linewidth=2, label=f"Mean: {clean.mean():.2f}")
-    ax.axvline(clean.median(), color="#1f77b4", linestyle="-.", linewidth=2, label=f"Median: {clean.median():.2f}")
+    ax.axvline(median_value, color="#1f77b4", linestyle="-.", linewidth=2, label=f"Median: {median_value:.0f}")
     ax.set_title(title)
     ax.set_xlabel("Balls Potted")
     ax.set_ylabel("Frequency")
