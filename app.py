@@ -243,7 +243,7 @@ def render_sidebar_branding() -> None:
             unsafe_allow_html=True,
         )
     st.sidebar.link_button("Watch on YouTube", YOUTUBE_URL, use_container_width=True)
-    st.sidebar.link_button("Tip via PayPal", PAYPAL_URL, use_container_width=True)
+    st.sidebar.link_button("Buy Me a Coffee", PAYPAL_URL, use_container_width=True)
     st.sidebar.divider()
 
 
