@@ -1,0 +1,9 @@
+.DS_Store
+.matplotlib/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.xlsx
+venv/
+.venv/
