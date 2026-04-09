@@ -35,6 +35,22 @@ class TimeSlice:
     frame: pd.DataFrame
 
 
+def generate_sample_balls_potted(rng: random.Random, adjustment: float = 0.0) -> int:
+    # Base distribution targets a mean near 43, a standard deviation near 12,
+    # and a slight skew toward lower values while staying within 0 to 75.
+    base_mean = 44.0 + adjustment
+    base_sd = 11.5
+    shape = (base_mean / base_sd) ** 2
+    scale = (base_sd**2) / base_mean
+
+    if rng.random() < 0.014:
+        sample = rng.randint(0, 8)
+    else:
+        sample = rng.gammavariate(shape, scale)
+
+    return int(max(0, min(75, round(sample))))
+
+
 def generate_sample_dataset(kind: str) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
 
@@ -46,9 +62,10 @@ def generate_sample_dataset(kind: str) -> pd.DataFrame:
         while current <= end:
             if current.weekday() in {1, 3, 5}:
                 attempts = rng.randint(2, 5)
-                baseline = 3.5 + (day_index % 7) * 0.3
+                daily_adjustment = ((day_index % 7) - 3) * 0.12
                 for attempt in range(1, attempts + 1):
-                    balls = max(0, min(15, round(baseline + attempt * 0.4 + rng.gauss(0, 1.1))))
+                    attempt_adjustment = (attempt - (attempts + 1) / 2) * 0.2
+                    balls = generate_sample_balls_potted(rng, daily_adjustment + attempt_adjustment)
                     rows.append(
                         {"date": current.isoformat(), "attempt": attempt, "balls_potted": balls}
                     )
@@ -61,10 +78,15 @@ def generate_sample_dataset(kind: str) -> pd.DataFrame:
         while current <= end:
             if current.weekday() in {0, 2, 4, 6}:
                 attempts = rng.randint(1, 5)
-                seasonal = 5 + (current.month in {5, 6, 7, 8}) * 1.7 - (current.month in {11, 12, 1, 2}) * 1.0
+                seasonal_adjustment = (
+                    (current.month in {5, 6, 7, 8}) * 1.0
+                    - (current.month in {11, 12, 1, 2}) * 0.8
+                    - (current.month == 10) * 0.7
+                    + 1.2
+                )
                 for attempt in range(1, attempts + 1):
-                    slump = -1.8 if current.month == 10 else 0.0
-                    balls = max(0, min(15, round(seasonal + attempt * 0.25 + slump + rng.gauss(0, 1.8))))
+                    attempt_adjustment = (attempt - 3) * 0.25
+                    balls = generate_sample_balls_potted(rng, seasonal_adjustment + attempt_adjustment)
                     rows.append(
                         {"date": current.isoformat(), "attempt": attempt, "balls_potted": balls}
                     )
